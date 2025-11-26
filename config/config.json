@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "arcutis-copilot-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/arcutisCopilot/ArcutisCopilotWebPart.js",
+          "manifest": "./src/webparts/arcutisCopilot/ArcutisCopilotWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "ArcutisCopilotWebPartStrings": "lib/webparts/arcutisCopilot/loc/{locale}.js"
+  }
+}
