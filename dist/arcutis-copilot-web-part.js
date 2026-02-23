@@ -80,6 +80,34 @@ define("5840c725-7097-4eb2-8df2-0624f0180459_0.0.1", ["@microsoft/sp-property-pa
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/
+/******/ 	// Set the webpack public path
+/******/ 	(function () {
+/******/ 	  var scripts = document.getElementsByTagName('script');
+/******/ 	  var regex = /arcutis\-copilot\-web\-part\.js/i;
+/******/ 	  var publicPath;
+/******/
+/******/ 	  if (scripts && scripts.length) {
+/******/ 	    for (var i = 0; i < scripts.length; i++) {
+/******/ 	      if (!scripts[i]) continue;
+/******/ 	      var path = scripts[i].getAttribute('src');
+/******/ 	      if (path && path.match(regex)) {
+/******/ 	        publicPath = path.substring(0, path.lastIndexOf('/') + 1);
+/******/ 	        break;
+/******/ 	      }
+/******/ 	    }
+/******/ 	  }
+/******/
+/******/ 	  if (!publicPath) {
+/******/ 	    for (var global in window.__setWebpackPublicPathLoaderSrcRegistry__) {
+/******/ 	      if (global && global.match(regex)) {
+/******/ 	        publicPath = global.substring(0, global.lastIndexOf('/') + 1);
+/******/ 	        break;
+/******/ 	      }
+/******/ 	    }
+/******/ 	  }
+/******/ 	  __webpack_require__.p = publicPath;
+/******/ 	})();
+/******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = "IMZD");
 /******/ })
@@ -116,6 +144,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _microsoft_sp_webpart_base__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_microsoft_sp_webpart_base__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var ArcutisCopilotWebPartStrings__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ArcutisCopilotWebPartStrings */ "KQnZ");
 /* harmony import */ var ArcutisCopilotWebPartStrings__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(ArcutisCopilotWebPartStrings__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _assets_arcutis_icon_png__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./assets/arcutis-icon.png */ "werJ");
+/* harmony import */ var _assets_arcutis_icon_png__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_assets_arcutis_icon_png__WEBPACK_IMPORTED_MODULE_4__);
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -135,6 +165,7 @@ var __extends = (undefined && undefined.__extends) || (function () {
 
 
 
+
 var ArcutisCopilotWebPart = /** @class */ (function (_super) {
     __extends(ArcutisCopilotWebPart, _super);
     function ArcutisCopilotWebPart() {
@@ -142,13 +173,22 @@ var ArcutisCopilotWebPart = /** @class */ (function (_super) {
     }
     ArcutisCopilotWebPart.prototype.render = function () {
         this.domElement.innerHTML = "\n    <div id=\"chatbot-container\"></div>\n  ";
-        var scriptId = "custom-chatbot-script";
-        if (!document.getElementById(scriptId)) {
-            var script = document.createElement("script");
-            script.id = scriptId;
-            script.src = "https://copilot-test-theta.vercel.app/copilot-bubble.js"; // 🔥 your script URL
-            script.async = true;
-            document.body.appendChild(script);
+        var configScriptId = "copilot-config-script";
+        var widgetScriptId = "copilot-widget-script";
+        // Add configuration script if not already present
+        if (!document.getElementById(configScriptId)) {
+            var configScript = document.createElement("script");
+            configScript.id = configScriptId;
+            configScript.textContent = "\n      window.CopilotBubbleConfig = {\n        // WebSocket URL - REQUIRED\n        websocketUrl: 'wss://arcutis-ai-v1-dkgmb6awhxgze5bw.centralus-01.azurewebsites.net/ws',\n        botIconUrl: '".concat(_assets_arcutis_icon_png__WEBPACK_IMPORTED_MODULE_4___default.a, "',\n        // Optional configuration\n        position: 'bottom-right', // 'bottom-right', 'bottom-left', 'top-right', 'top-left'\n        primaryColor: '#a67c52', // Vintage paper primary color\n        theme: 'light', // 'light' or 'dark'\n        bubbleText: 'AI',\n      };\n    ");
+            document.body.appendChild(configScript);
+        }
+        // Add widget script if not already present
+        if (!document.getElementById(widgetScriptId)) {
+            var widgetScript = document.createElement("script");
+            widgetScript.id = widgetScriptId;
+            widgetScript.src = "https://copilot-test-theta.vercel.app/copilot-bubble.js";
+            widgetScript.async = true;
+            document.body.appendChild(widgetScript);
         }
     };
     Object.defineProperty(ArcutisCopilotWebPart.prototype, "dataVersion", {
@@ -219,6 +259,18 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_UWqr__;
 /***/ (function(module, exports) {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_br4S__;
+
+/***/ }),
+
+/***/ "werJ":
+/*!*************************************************************!*\
+  !*** ./lib/webparts/arcutisCopilot/assets/arcutis-icon.png ***!
+  \*************************************************************/
+/*! no static exports found */
+/*! exports used: default */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__.p + "arcutis-icon_567f94f47a416e4f852ff3780a16ac45.png";
 
 /***/ })
 

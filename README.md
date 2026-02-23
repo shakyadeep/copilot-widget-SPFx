@@ -12,7 +12,7 @@ Arcutis Copilot is a SharePoint Framework (SPFx) web part that integrates a cust
 - Gulp
 - SCSS
 
-## Used SharePoint Framework Version
+## Used SharePoint Framework Version-
 
 ![version](https://img.shields.io/badge/version-1.18.2-green.svg)
 
