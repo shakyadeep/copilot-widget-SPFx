@@ -4,9 +4,7 @@ import {
   PropertyPaneTextField
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
-import { escape } from '@microsoft/sp-lodash-subset';
 
-import styles from './ArcutisCopilotWebPart.module.scss';
 import * as strings from 'ArcutisCopilotWebPartStrings';
 import arcutisIconUrl from './assets/arcutis-icon.png';
 
@@ -14,44 +12,50 @@ export interface IArcutisCopilotWebPartProps {
   description: string;
 }
 
-export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcutisCopilotWebPartProps> {
+interface ICopilotBubbleConfig {
+  websocketUrl: string;
+  botIconUrl?: string;
+  position?: string;
+  primaryColor?: string;
+  theme?: string;
+  bubbleText?: string;
+}
 
- public render(): void {
-  this.domElement.innerHTML = `
-    <div id="chatbot-container"></div>
-  `;
-
-  const configScriptId = "copilot-config-script";
-  const widgetScriptId = "copilot-widget-script";
-
-  // Add configuration script if not already present
-  if (!document.getElementById(configScriptId)) {
-    const configScript = document.createElement("script");
-    configScript.id = configScriptId;
-    configScript.textContent = `
-      window.CopilotBubbleConfig = {
-        // WebSocket URL - REQUIRED
-        websocketUrl: 'wss://arcutis-ai-v1-dkgmb6awhxgze5bw.centralus-01.azurewebsites.net/ws',
-        botIconUrl: '${arcutisIconUrl}',
-        // Optional configuration
-        position: 'bottom-right', // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
-        primaryColor: '#a67c52', // Vintage paper primary color
-        theme: 'light', // 'light' or 'dark'
-        bubbleText: 'AI',
-      };
-    `;
-    document.body.appendChild(configScript);
-  }
-
-  // Add widget script if not already present
-  if (!document.getElementById(widgetScriptId)) {
-    const widgetScript = document.createElement("script");
-    widgetScript.id = widgetScriptId;
-    widgetScript.src = "https://copilot-test-theta.vercel.app/copilot-bubble.js";
-    widgetScript.async = true;
-    document.body.appendChild(widgetScript);
+declare global {
+  interface Window {
+    CopilotBubbleConfig?: ICopilotBubbleConfig;
+    CopilotBubbleLoaded?: boolean;
   }
 }
+
+export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcutisCopilotWebPartProps> {
+
+  private _widgetInitialized: boolean = false;
+
+  public render(): void {
+    // Widget renders its own floating UI on document.body; web part host stays minimal.
+    this.domElement.innerHTML = '<div class="arcutisCopilotHost" aria-hidden="true"></div>';
+  }
+
+  protected onInit(): Promise<void> {
+    if (!this._widgetInitialized && !window.CopilotBubbleLoaded) {
+      window.CopilotBubbleConfig = {
+        websocketUrl: 'wss://arcutis-ai-v1-dkgmb6awhxgze5bw.centralus-01.azurewebsites.net/ws',
+        botIconUrl: arcutisIconUrl,
+        position: 'bottom-right',
+        primaryColor: '#a67c52',
+        theme: 'light',
+        bubbleText: 'AI',
+      };
+
+      // Bundled with the web part so SharePoint CSP allows execution (no inline/external script tags).
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('./scripts/copilot-widget.js');
+      this._widgetInitialized = true;
+    }
+
+    return super.onInit();
+  }
 
   protected get dataVersion(): Version {
     return Version.parse('1.0');

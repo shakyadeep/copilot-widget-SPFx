@@ -17,11 +17,11 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Other
     "group": { "default": "Other" },
-    "title": { "default": "arcutis-1" },
+    "title": { "default": "arcutis-copilot-new" },
     "description": { "default": "first-test" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "arcutis-1"
+      "description": "arcutis-copilot-new"
     }
   }]
 }

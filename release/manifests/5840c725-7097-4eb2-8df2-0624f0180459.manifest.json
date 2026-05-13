@@ -15,14 +15,14 @@
         "default": "Other"
       },
       "title": {
-        "default": "arcutis-1"
+        "default": "arcutis-copilot-new"
       },
       "description": {
         "default": "first-test"
       },
       "officeFabricIconFontName": "Page",
       "properties": {
-        "description": "arcutis-1"
+        "description": "arcutis-copilot-new"
       }
     }
   ],
@@ -34,7 +34,7 @@
     "scriptResources": {
       "arcutis-copilot-web-part": {
         "type": "path",
-        "path": "arcutis-copilot-web-part_4c630bc7fd2bbcdf7c7d.js"
+        "path": "arcutis-copilot-web-part_61afff2074eb746d89ce.js"
       },
       "@microsoft/sp-property-pane": {
         "type": "component",
