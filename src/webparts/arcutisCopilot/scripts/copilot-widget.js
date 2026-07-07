@@ -889,7 +889,8 @@
     const messageData = {
       bot: 'copilot',
       chatter_id: chatterId,
-      question: messageText
+      question: messageText,
+      copilot_key: "A1d1T1r6TaYqJ2rDev9xbUi8_nv9UqsInkzdG4eVJqc",
     }
 
     socket.send(JSON.stringify(messageData))

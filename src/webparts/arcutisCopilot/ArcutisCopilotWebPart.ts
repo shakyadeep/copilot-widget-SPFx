@@ -40,7 +40,7 @@ export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcuti
   protected onInit(): Promise<void> {
     if (!this._widgetInitialized && !window.CopilotBubbleLoaded) {
       window.CopilotBubbleConfig = {
-        websocketUrl: 'wss://arcutis-ai-v1-dkgmb6awhxgze5bw.centralus-01.azurewebsites.net/ws',
+        websocketUrl: 'wss://arcnet-ai-assistant-backend-dev-hzbbejcraah9defd.centralus-01.azurewebsites.net/ws',
         botIconUrl: arcutisIconUrl,
         position: 'bottom-right',
         primaryColor: '#a67c52',
