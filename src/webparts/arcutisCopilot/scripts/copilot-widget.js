@@ -521,6 +521,13 @@
       ul.copilot-list {
         list-style-type: disc;
       }
+      ul.copilot-list ul.copilot-list {
+        list-style-type: circle;
+        margin: 0.4em 0 0.2em;
+      }
+      ul.copilot-list ul.copilot-list ul.copilot-list {
+        list-style-type: square;
+      }
       .copilot-list::marker,
       .copilot-list-item::marker {
         color: ${withOpacity(config.primaryColor, 0.9)};
@@ -1389,71 +1396,85 @@
       return tableHtml
     })
 
-    // Process lists - need to handle multi-line items and nested lists
+    // Process lists (including nested lists by indentation)
     const lines = html.split('\n')
     const processedLines = []
-    let inList = false
-    let listType = null
-    let listItems = []
 
-    function closeList() {
-      if (listItems.length > 0) {
-        const listTag = listType === 'ul' ? 'ul' : 'ol'
-        processedLines.push(`<${listTag} class="copilot-list">${listItems.join('')}</${listTag}>`)
-        listItems = []
+    function parseList(startIndex, baseIndent) {
+      const items = []
+      let i = startIndex
+      let listType = null
+
+      while (i < lines.length) {
+        const line = lines[i]
+        const indentMatch = line.match(/^(\s*)/)
+        const rawIndent = indentMatch ? indentMatch[1] : ''
+        const indent = rawIndent.replace(/\t/g, '    ').length
+        const trimmedLine = line.trim()
+
+        if (!trimmedLine) {
+          i++
+          continue
+        }
+
+        const ulMatch = trimmedLine.match(/^[-*+]\s+(.+)$/)
+        const olMatch = trimmedLine.match(/^\d+\.\s+(.+)$/)
+        const isListItem = !!(ulMatch || olMatch)
+
+        if (!isListItem) {
+          break
+        }
+
+        if (indent < baseIndent) {
+          break
+        }
+
+        if (indent > baseIndent) {
+          if (items.length === 0) {
+            break
+          }
+          const nested = parseList(i, indent)
+          items[items.length - 1].nested += nested.html
+          i = nested.nextIndex
+          continue
+        }
+
+        const currentType = ulMatch ? 'ul' : 'ol'
+        if (!listType) {
+          listType = currentType
+        } else if (currentType !== listType) {
+          break
+        }
+
+        items.push({
+          content: processInlineMarkdown((ulMatch || olMatch)[1]),
+          nested: ''
+        })
+        i++
       }
-      inList = false
-      listType = null
+
+      const listTag = listType === 'ol' ? 'ol' : 'ul'
+      const listHtml = `<${listTag} class="copilot-list">${items.map(item => `<li class="copilot-list-item">${item.content}${item.nested}</li>`).join('')}</${listTag}>`
+
+      return { html: listHtml, nextIndex: i }
     }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       const trimmedLine = line.trim()
+      const listMatch = trimmedLine.match(/^([-*+]|\d+\.)\s+/)
 
-      // Check for unordered list item
-      const ulMatch = trimmedLine.match(/^[-*+]\s+(.+)$/)
-      // Check for ordered list item
-      const olMatch = trimmedLine.match(/^\d+\.\s+(.+)$/)
-
-      if (ulMatch || olMatch) {
-        const isUnordered = !!ulMatch
-        const content = (ulMatch || olMatch)[1]
-
-        // If we're in a different list type, close it
-        if (inList && listType !== (isUnordered ? 'ul' : 'ol')) {
-          closeList()
-        }
-
-        // Start or continue list
-        inList = true
-        listType = isUnordered ? 'ul' : 'ol'
-        listItems.push(`<li class="copilot-list-item">${processInlineMarkdown(content)}</li>`)
-      } else if (trimmedLine === '' && inList) {
-        // Empty line might end the list, but check next line
-        if (i < lines.length - 1) {
-          const nextLine = lines[i + 1].trim()
-          const nextIsListItem = /^[-*+]\s+/.test(nextLine) || /^\d+\.\s+/.test(nextLine)
-          if (!nextIsListItem) {
-            closeList()
-            processedLines.push('')
-          } else {
-            processedLines.push('')
-          }
-        } else {
-          closeList()
-        }
-      } else {
-        // Not a list item
-        if (inList) {
-          closeList()
-        }
+      if (!listMatch) {
         processedLines.push(line)
+        continue
       }
-    }
 
-    // Close any remaining list
-    if (inList) {
-      closeList()
+      const indentMatch = line.match(/^(\s*)/)
+      const rawIndent = indentMatch ? indentMatch[1] : ''
+      const indent = rawIndent.replace(/\t/g, '    ').length
+      const parsed = parseList(i, indent)
+      processedLines.push(parsed.html)
+      i = parsed.nextIndex - 1
     }
 
     html = processedLines.join('\n')

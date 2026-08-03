@@ -34,7 +34,7 @@
     "scriptResources": {
       "arcutis-copilot-web-part": {
         "type": "path",
-        "path": "arcutis-copilot-web-part.js"
+        "path": "arcutis-copilot-web-part_de73822b390e03b86bb1.js"
       },
       "@microsoft/sp-property-pane": {
         "type": "component",
@@ -43,7 +43,7 @@
       },
       "ArcutisCopilotWebPartStrings": {
         "type": "path",
-        "path": "ArcutisCopilotWebPartStrings_en-us.js"
+        "path": "ArcutisCopilotWebPartStrings_en-us_536e65149b0acf4d52c0043073b9fc59.js"
       },
       "@microsoft/sp-core-library": {
         "type": "component",
