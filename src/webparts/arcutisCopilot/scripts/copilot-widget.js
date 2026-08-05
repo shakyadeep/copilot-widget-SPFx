@@ -1,12 +1,12 @@
 /**
- * Copilot Widget - Self-contained Chat Widget with WebSocket
+ * Copilot Widget - Self-contained Chat Widget with SSE
  * Works like Intercom/Yellow.ai - just add the script and it works!
  *
  * Usage:
  * <script src="https://your-domain.com/copilot-widget.js"></script>
  * <script>
  *   window.CopilotBubbleConfig = {
- *     websocketUrl: 'wss://your-websocket-url/ws',
+ *     sseUrl: 'https://your-api/chat',
  *     position: 'bottom-right',
  *     primaryColor: '#a67c52'
  *   };
@@ -26,7 +26,7 @@
   const bubbleConfig = window.CopilotBubbleConfig || {}
   const config = Object.assign(
     {
-      websocketUrl: bubbleConfig.websocketUrl || '',
+      sseUrl: bubbleConfig.sseUrl || '',
       position: bubbleConfig.position || 'bottom-right',
       zIndex: bubbleConfig.zIndex || 999999,
       primaryColor: bubbleConfig.primaryColor || '#fef7ef', // Vintage paper primary
@@ -35,6 +35,7 @@
       userId: bubbleConfig.userId || 'guest@example.com',
       role: bubbleConfig.role || 'user',
       botIconUrl: bubbleConfig.botIconUrl || '', // Bot avatar icon URL
+      logoUrl: bubbleConfig.logoUrl || '', // Welcome screen logo URL
       suggestedQuestions: bubbleConfig.suggestedQuestions || [
         'What equity-related policies and plans are available for employees?',
         'What are all the travel policies, including domestic and international travel guidelines?',
@@ -49,32 +50,18 @@
   let isOpen = false
   let bubbleContainer = null
   let chatWindow = null
-  let socket = null
   let messages = []
   let chatMessages = []
   let isStreaming = false
-  let isConnected = false
+  let isConnected = !!config.sseUrl
   let animation = false
   let streamingResponse = ''
   let renderTimeout = null
   let lastBotMessageElement = null
-  let currentChatId = null // Track current chat session to ignore old messages
+  let currentChatId = null // Track in-flight turn to ignore stale stream events
   let currentCitations = [] // Store citations for current response
-
-  // Generate UUID for chatter_id (will be set when starting a new chat)
-  let chatterId = null
-
-  // UUID v4 generator function
-  function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0
-        const v = c === 'x' ? r : (r & 0x3) | 0x8
-        return v.toString(16)
-      }
-    )
-  }
+  let sessionId = null // From first done event; reused until New Chat
+  let abortController = null
 
   // Custom markdown parser - handles all markdown features without external dependencies
 
@@ -387,6 +374,7 @@
       .copilot-message {
         display: flex;
         gap: 12px;
+        min-width: 0;
         animation: fadeIn 0.3s ease;
       }
       @keyframes fadeIn {
@@ -398,9 +386,12 @@
       }
       .copilot-message-content {
         max-width: 80%;
+        min-width: 0;
         padding: 12px 16px;
         border-radius: 12px;
         word-wrap: break-word;
+        overflow-wrap: break-word;
+        overflow-x: hidden;
         line-height: 1.5;
         font-size: 13px;
       }
@@ -412,6 +403,7 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
       .copilot-message-bot .copilot-message-content {
+        max-width: 90%;
         background: #ffffff;
         color: #000000;
         border: 1px solid ${withOpacity(colors.border, 0.7)};
@@ -560,6 +552,72 @@
         border-top: 2px solid ${withOpacity(colors.border, 0.6)};
         margin: 1.2em 0;
       }
+      .copilot-table-wrapper {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin: 0.8em 0;
+        border: 1px solid ${withOpacity(colors.border, 0.8)};
+        border-radius: 8px;
+        background: ${colors.card};
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: ${colors.border} transparent;
+      }
+      .copilot-table-wrapper::-webkit-scrollbar {
+        height: 6px;
+      }
+      .copilot-table-wrapper::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .copilot-table-wrapper::-webkit-scrollbar-thumb {
+        background: ${colors.border};
+        border-radius: 3px;
+      }
+      .copilot-table-wrapper:first-child {
+        margin-top: 0;
+      }
+      .copilot-table-wrapper:last-child {
+        margin-bottom: 0;
+      }
+      .copilot-table {
+        border-collapse: collapse;
+        width: max-content;
+        min-width: 100%;
+        margin: 0;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .copilot-table th,
+      .copilot-table td {
+        border: 1px solid ${withOpacity(colors.border, 0.7)};
+        border-top: none;
+        border-left: none;
+        padding: 8px 10px;
+        text-align: left;
+        vertical-align: top;
+        color: #000000;
+        min-width: 110px;
+        max-width: 220px;
+        white-space: normal;
+        word-break: break-word;
+      }
+      .copilot-table th:last-child,
+      .copilot-table td:last-child {
+        border-right: none;
+      }
+      .copilot-table tr:last-child td {
+        border-bottom: none;
+      }
+      .copilot-table th {
+        background: ${withOpacity(config.primaryColor, 0.1)};
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .copilot-table tbody tr:nth-child(even) {
+        background: ${withOpacity(config.primaryColor, 0.04)};
+      }
       .copilot-message-avatar {
         width: 32px;
         height: 32px;
@@ -588,10 +646,19 @@
       .copilot-empty-screen {
         flex: 1;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 40px 20px;
         text-align: center;
+        gap: 16px;
+      }
+      .copilot-empty-logo {
+        width: 120px;
+        height: auto;
+        max-width: 60%;
+        object-fit: contain;
+        display: block;
       }
       .copilot-empty-screen h2 {
         font-size: 16px;
@@ -755,92 +822,208 @@
     document.head.appendChild(style)
   }
 
-  // WebSocket connection
-  function connectWebSocket() {
-    if (!config.websocketUrl) {
-      console.warn(
-        'Copilot Widget: WebSocket URL not configured. Please set window.CopilotBubbleConfig.websocketUrl'
-      )
-      updateConnectionStatus()
-      return
+  // --- SSE helpers (same contract as live-app: token / citations / done / error) ---
+
+  function mapCitationsToUi(citations) {
+    if (!citations || !Array.isArray(citations)) return []
+    return citations.map((citation, index) => {
+      const title = citation.title || citation.doc_name || 'Source'
+      const url =
+        citation.sharepoint_url ||
+        citation.source_file_path ||
+        undefined
+      const page = citation.page_or_slide_or_sheet || citation.page_num
+      return {
+        source_id: String(index + 1),
+        doc_name: title,
+        Title: title,
+        quote: citation.snippet || citation.quote || '',
+        source_file_path: url,
+        img_url: url,
+        page_or_slide_or_sheet: page,
+        page_num: page
+      }
+    })
+  }
+
+  /**
+   * Parse SSE frames from a text buffer (CRLF-safe).
+   * Returns complete events and the remainder (incomplete frame).
+   */
+  function parseSseChunk(buffer) {
+    const normalized = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    const events = []
+    const parts = normalized.split('\n\n')
+    const rest = parts.pop() || ''
+
+    for (const part of parts) {
+      if (!part.trim() || part.trimStart().startsWith(':')) continue
+
+      let eventName = 'message'
+      const dataLines = []
+
+      for (const line of part.split('\n')) {
+        if (!line || line.startsWith(':')) continue
+        if (line.startsWith('event:')) {
+          eventName = line.slice(6).trim()
+        } else if (line.startsWith('data:')) {
+          const value = line.slice(5)
+          dataLines.push(value.startsWith(' ') ? value.slice(1) : value)
+        }
+      }
+
+      if (!dataLines.length) continue
+
+      try {
+        const data = JSON.parse(dataLines.join('\n'))
+        const event = toSseEvent(eventName, data)
+        if (event) events.push(event)
+      } catch (e) {
+        // Ignore malformed JSON frames
+      }
     }
 
-    try {
-      socket = new WebSocket(config.websocketUrl)
+    return { events: events, rest: rest }
+  }
 
-      socket.onopen = () => {
-        isConnected = true
-        updateConnectionStatus()
-        if (chatWindow) {
-          updateConnectionStatus()
+  function toSseEvent(eventName, data) {
+    if (eventName === 'token') {
+      return {
+        event: 'token',
+        data: {
+          token: String(data && data.token != null ? data.token : ''),
+          citations: Array.isArray(data && data.citations)
+            ? data.citations
+            : undefined
         }
       }
+    }
+    if (eventName === 'citations') {
+      if (!data || !Array.isArray(data.citations)) return null
+      return { event: 'citations', data: { citations: data.citations } }
+    }
+    if (eventName === 'done') {
+      return { event: 'done', data: data || {} }
+    }
+    if (eventName === 'error') {
+      return { event: 'error', data: data || {} }
+    }
 
-      socket.onmessage = event => {
-        try {
-          const data = JSON.parse(event.data)
-          handleWebSocketMessage(data)
-        } catch (e) {
-          // Error parsing message
+    // Fallbacks when event: line is missing
+    if (data && typeof data.token === 'string' && !data.session_id) {
+      return {
+        event: 'token',
+        data: {
+          token: String(data.token),
+          citations: Array.isArray(data.citations) ? data.citations : undefined
         }
       }
+    }
+    if (
+      data &&
+      Array.isArray(data.citations) &&
+      !data.token &&
+      !data.session_id
+    ) {
+      return { event: 'citations', data: { citations: data.citations } }
+    }
+    if (
+      data &&
+      (data.session_id || data.answer || (data.chat && data.chat.answer)) &&
+      (data.message_id ||
+        data.citations ||
+        typeof data.answer === 'string' ||
+        (data.chat && typeof data.chat.answer === 'string'))
+    ) {
+      return { event: 'done', data: data }
+    }
+    if (data && typeof data.detail === 'string') {
+      return { event: 'error', data: { detail: data.detail } }
+    }
 
-      socket.onclose = event => {
-        isConnected = false
-        updateConnectionStatus()
-        if (chatWindow) {
-          updateConnectionStatus()
-        }
-        // Reconnect after 3 seconds if not a normal closure
-        if (event.code !== 1000) {
-          setTimeout(connectWebSocket, 3000)
-        }
-      }
+    return null
+  }
 
-      socket.onerror = error => {
-        isConnected = false
-        updateConnectionStatus()
-        if (chatWindow) {
-          updateConnectionStatus()
-        }
+  /**
+   * Pull final answer / citations / session_id from the done payload.
+   * Supports top-level fields and nested `chat` object shapes.
+   */
+  function extractDonePayload(data) {
+    const root = data && typeof data === 'object' ? data : {}
+    const chat =
+      root.chat && typeof root.chat === 'object' && !Array.isArray(root.chat)
+        ? root.chat
+        : null
+
+    const answerCandidates = [
+      root.answer,
+      chat && chat.answer,
+      root.message,
+      root.content,
+      chat && chat.message,
+      chat && chat.content
+    ]
+
+    let answer = ''
+    for (let i = 0; i < answerCandidates.length; i++) {
+      const candidate = answerCandidates[i]
+      if (typeof candidate === 'string' && candidate.trim()) {
+        answer = candidate
+        break
       }
-    } catch (error) {
-      isConnected = false
-      updateConnectionStatus()
+    }
+
+    const citations = Array.isArray(chat && chat.citations)
+      ? chat.citations
+      : Array.isArray(root.citations)
+        ? root.citations
+        : null
+
+    const nextSessionId =
+      (typeof root.session_id === 'string' && root.session_id) ||
+      (chat && typeof chat.session_id === 'string' && chat.session_id) ||
+      null
+
+    return {
+      answer: answer,
+      citations: citations,
+      sessionId: nextSessionId
     }
   }
 
-  function handleWebSocketMessage(data) {
-    // Ignore messages if we've started a new chat (ignore delayed messages from previous conversation)
+  function handleSseEvent(event) {
+    // Ignore delayed events after New Chat / turn reset
     if (
       currentChatId === null &&
-      (data.type === 'streaming' || data.type === 'end_of_stream')
+      (event.event === 'token' ||
+        event.event === 'citations' ||
+        event.event === 'done')
     ) {
       return
     }
 
-    if (data.type === 'streaming') {
+    if (event.event === 'token') {
       isStreaming = true
       animation = false
-      updateNewChatButtonState() // Disable new chat button while streaming
-      messages.push(data)
+      updateNewChatButtonState()
 
-      // Accumulate streaming response - check both 'message' and 'content' fields
-      const messageContent = data.message || data.content || ''
-      if (messageContent) {
-        streamingResponse += messageContent
-        // Throttle updates for smoother streaming (update every 50ms max)
+      const token = (event.data && event.data.token) || ''
+      if (token) {
+        streamingResponse += token
         if (renderTimeout) {
           clearTimeout(renderTimeout)
         }
-        renderTimeout = setTimeout(() => {
+        renderTimeout = setTimeout(function () {
           updateLastBotMessage(streamingResponse, false)
         }, 50)
       }
-    } else if (data.type === 'end_of_rag_streaming') {
-      // Handle RAG streaming end
-    } else if (data.type === 'end_of_stream') {
-      // Clear any pending render timeout
+
+      if (event.data && event.data.citations && event.data.citations.length) {
+        currentCitations = mapCitationsToUi(event.data.citations)
+      }
+    } else if (event.event === 'citations') {
+      currentCitations = mapCitationsToUi(event.data.citations)
+    } else if (event.event === 'done') {
       if (renderTimeout) {
         clearTimeout(renderTimeout)
         renderTimeout = null
@@ -848,38 +1031,53 @@
 
       isStreaming = false
       animation = false
-      updateNewChatButtonState() // Re-enable new chat button when streaming ends
+      updateNewChatButtonState()
 
-      // Get final message from accumulated messages or data
-      const finalMessage =
-        messages.length > 0
-          ? messages.map(item => item.message || item.content || '').join('')
-          : data.message || data.content || streamingResponse
+      const donePayload = extractDonePayload(event.data)
 
-      // Capture citations data
-      currentCitations = data.specific_citations || []
+      // Persist session_id from first (and later) done events for follow-up questions
+      if (donePayload.sessionId) {
+        sessionId = donePayload.sessionId
+      }
+
+      if (donePayload.citations) {
+        currentCitations = mapCitationsToUi(donePayload.citations)
+      }
+
+      // Prefer final answer from done payload; fall back to buffered stream text
+      const finalMessage = donePayload.answer || streamingResponse
 
       streamingResponse = ''
-      messages = [] // Clear messages array
+      messages = []
+      // Replace streamed partial text with the authoritative final answer + citations
       updateLastBotMessage(finalMessage, true)
-      currentChatId = null // Reset chat ID after stream completes
-    } else if (data.type === 'error') {
+      currentChatId = null
+    } else if (event.event === 'error') {
       if (renderTimeout) {
         clearTimeout(renderTimeout)
         renderTimeout = null
       }
       isStreaming = false
       animation = false
-      updateNewChatButtonState() // Re-enable new chat button on error
-      currentCitations = [] // Clear citations on error
-      addMessage('bot', 'Sorry, I encountered an error. Please try again.')
-      currentChatId = null // Reset on error
+      updateNewChatButtonState()
+      currentCitations = []
+      const detail =
+        (event.data && event.data.detail) ||
+        'Sorry, I encountered an error. Please try again.'
+      if (streamingResponse) {
+        updateLastBotMessage(streamingResponse, true)
+        addMessage('bot', detail)
+      } else {
+        updateLastBotMessage(detail, true)
+      }
+      streamingResponse = ''
+      currentChatId = null
     }
   }
 
-  function sendMessage(messageText) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      addMessage('bot', 'Not connected to server. Please wait...')
+  async function sendMessage(messageText) {
+    if (!config.sseUrl) {
+      addMessage('bot', 'Chat URL not configured.')
       return
     }
 
@@ -887,32 +1085,124 @@
       return
     }
 
-    // Clear previous messages array for new conversation
     messages = []
     streamingResponse = ''
-    currentCitations = [] // Clear previous citations
+    currentCitations = []
 
-    // Format message according to app's payload structure with generated chatter_id
-    const messageData = {
-      bot: 'copilot',
-      chatter_id: chatterId,
-      question: messageText,
-      copilot_key: "A1d1T1r6TaYqJ2rDev9xbUi8_nv9UqsInkzdG4eVJqc",
+    // First question: session_id null. Follow-ups: reuse session_id from done.
+    const payload = {
+      session_id: sessionId || null,
+      message: messageText,
+      retrieval_mode: 'style2',
+      inline_citations: false
     }
 
-    socket.send(JSON.stringify(messageData))
-
-    // Set current chat ID to track this conversation
     currentChatId = Date.now().toString()
-
-    // Add user message to UI
     addMessage('user', messageText)
     animation = true
     isStreaming = true
-    updateNewChatButtonState() // Disable new chat button when sending message
-
-    // Show loading indicator
+    updateNewChatButtonState()
     addMessage('bot', '')
+
+    if (abortController) {
+      abortController.abort()
+    }
+    abortController = new AbortController()
+
+    try {
+      const res = await fetch(config.sseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream'
+        },
+        body: JSON.stringify(payload),
+        signal: abortController.signal
+      })
+
+      if (!res.ok || !res.body) {
+        let detail = 'Sorry, I encountered an error. Please try again.'
+        try {
+          const json = await res.json()
+          if (json && json.detail) detail = String(json.detail)
+        } catch (e) {
+          // ignore
+        }
+        isStreaming = false
+        animation = false
+        updateNewChatButtonState()
+        updateLastBotMessage(detail, true)
+        currentChatId = null
+        return
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const result = await reader.read()
+        if (result.done) break
+
+        buffer += decoder.decode(result.value, { stream: true })
+        const parsed = parseSseChunk(buffer)
+        buffer = parsed.rest
+
+        for (let i = 0; i < parsed.events.length; i++) {
+          const event = parsed.events[i]
+          handleSseEvent(event)
+          if (event.event === 'done') {
+            try {
+              await reader.cancel()
+            } catch (e) {
+              // ignore
+            }
+            return
+          }
+        }
+      }
+
+      // Flush trailing buffer
+      buffer += decoder.decode()
+      if (buffer.trim()) {
+        const parsed = parseSseChunk(
+          buffer.endsWith('\n\n') ? buffer : buffer + '\n\n'
+        )
+        for (let i = 0; i < parsed.events.length; i++) {
+          handleSseEvent(parsed.events[i])
+        }
+      }
+
+      // Stream closed without done — commit whatever we received
+      if (currentChatId !== null && streamingResponse) {
+        isStreaming = false
+        animation = false
+        updateNewChatButtonState()
+        updateLastBotMessage(streamingResponse, true)
+        streamingResponse = ''
+        currentChatId = null
+      } else if (currentChatId !== null) {
+        isStreaming = false
+        animation = false
+        updateNewChatButtonState()
+        currentChatId = null
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return
+      isStreaming = false
+      animation = false
+      updateNewChatButtonState()
+      const detail =
+        e && e.message ? e.message : 'Network error. Please try again.'
+      if (streamingResponse) {
+        updateLastBotMessage(streamingResponse, true)
+        addMessage('bot', detail)
+      } else {
+        updateLastBotMessage(detail, true)
+      }
+      streamingResponse = ''
+      currentChatId = null
+    }
   }
 
   function addMessage(sender, content, citations = []) {
@@ -1057,16 +1347,24 @@
     }
   }
 
+  function getEmptyScreenHtml() {
+    const logo = config.logoUrl
+      ? `<img class="copilot-empty-logo" src="${escapeHtml(config.logoUrl)}" alt="Arcutis" />`
+      : ''
+    return `
+      <div class="copilot-empty-screen">
+        ${logo}
+        <h2>How can I help you today?</h2>
+      </div>
+    `
+  }
+
   function renderMessages() {
     const messagesContainer = document.getElementById('copilot-chat-messages')
     if (!messagesContainer) return
 
     if (chatMessages.length === 0) {
-      messagesContainer.innerHTML = `
-        <div class="copilot-empty-screen">
-          <h2>How can I help you today?</h2>
-        </div>
-      `
+      messagesContainer.innerHTML = getEmptyScreenHtml()
       return
     }
 
@@ -1229,6 +1527,7 @@
       .replace(/\\_/g, '_') // Replace escaped _ with actual _
       .replace(/\\\[/g, '[') // Replace escaped [ with actual [
       .replace(/\\\]/g, ']') // Replace escaped ] with actual ]
+      .replace(/\\\$/g, '$') // Replace escaped $ (e.g. \$5,000) with actual $
       .trim()
 
     // Ensure proper spacing around headers (critical for markdown parsing)
@@ -1267,7 +1566,7 @@
     let html = processedContent
 
     // Helper function to process inline markdown within a text block
-    // Processes markdown patterns first, then escapes remaining text for safety
+    // Processes markdown patterns first, then escapes text once (including inside tags)
     function processInlineMarkdown(text) {
       // Store placeholders for inline code to avoid processing markdown inside them
       const codePlaceholders = []
@@ -1281,30 +1580,28 @@
         return placeholder
       })
 
-      // Process bold (**text** or __text__) - process before italic
+      // Wrap markdown in tags without escaping yet — a single escape pass below
+      // handles text both outside and inside tags (avoids T&amp;amp;E double-encoding)
       text = text.replace(/\*\*([^*]+?)\*\*/g, (match, innerText) => {
-        // Escape the inner text for safety
-        return `<strong>${escapeHtml(innerText)}</strong>`
+        return `<strong>${innerText}</strong>`
       })
       text = text.replace(/__([^_]+?)__/g, (match, innerText) => {
-        return `<strong>${escapeHtml(innerText)}</strong>`
+        return `<strong>${innerText}</strong>`
       })
 
       // Process italic (*text* or _text_) - but not if it's part of bold
       text = text.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, (match, innerText) => {
-        // Skip if already inside HTML tags
         if (match.includes('<') || match.includes('>')) return match
-        return `<em>${escapeHtml(innerText)}</em>`
+        return `<em>${innerText}</em>`
       })
       text = text.replace(/(?<!_)_([^_\n]+?)_(?!_)/g, (match, innerText) => {
-        // Skip if already inside HTML tags
         if (match.includes('<') || match.includes('>')) return match
-        return `<em>${escapeHtml(innerText)}</em>`
+        return `<em>${innerText}</em>`
       })
 
-      // Process links [text](url)
+      // Process links [text](url) — escape href attr only; link text escaped below
       text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
-        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="copilot-link">${escapeHtml(linkText)}</a>`
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="copilot-link">${linkText}</a>`
       })
 
       // Escape remaining plain text (not inside HTML tags)
@@ -1378,21 +1675,21 @@
         return line.split('|').map(cell => cell.trim()).filter((cell, i) => i > 0 && i <= headers.length)
       })
 
-      let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 1em 0;"><thead><tr>'
+      let tableHtml = '<div class="copilot-table-wrapper"><table class="copilot-table"><thead><tr>'
       headers.forEach(header => {
-        tableHtml += `<th style="border: 1px solid ${colors.border}; padding: 8px; text-align: left; background: ${withOpacity(config.primaryColor, 0.1)}; color: #000000;">${processInlineMarkdown(header)}</th>`
+        tableHtml += `<th>${processInlineMarkdown(header)}</th>`
       })
       tableHtml += '</tr></thead><tbody>'
 
       rows.forEach(row => {
         tableHtml += '<tr>'
-        row.forEach((cell, i) => {
-          tableHtml += `<td style="border: 1px solid ${colors.border}; padding: 8px; color: #000000;">${processInlineMarkdown(cell)}</td>`
+        row.forEach((cell) => {
+          tableHtml += `<td>${processInlineMarkdown(cell)}</td>`
         })
         tableHtml += '</tr>'
       })
 
-      tableHtml += '</tbody></table>'
+      tableHtml += '</tbody></table></div>'
       return tableHtml
     })
 
@@ -1413,8 +1710,25 @@
         const trimmedLine = line.trim()
 
         if (!trimmedLine) {
-          i++
-          continue
+          // Peek ahead: keep blank lines that separate the list from following prose
+          let j = i + 1
+          while (j < lines.length && !lines[j].trim()) j++
+          if (j >= lines.length) {
+            break
+          }
+          const nextTrimmed = lines[j].trim()
+          const nextUl = nextTrimmed.match(/^[-*+]\s+(.+)$/)
+          const nextOl = nextTrimmed.match(/^\d+\.\s+(.+)$/)
+          const nextIndentMatch = lines[j].match(/^(\s*)/)
+          const nextIndent = (nextIndentMatch ? nextIndentMatch[1] : '').replace(
+            /\t/g,
+            '    '
+          ).length
+          if ((nextUl || nextOl) && nextIndent >= baseIndent) {
+            i++
+            continue
+          }
+          break
         }
 
         const ulMatch = trimmedLine.match(/^[-*+]\s+(.+)$/)
@@ -1486,17 +1800,34 @@
         const trimmed = para.trim()
         if (!trimmed) return ''
 
-        // Don't wrap already processed elements in paragraphs
-        if (
-          trimmed.match(/^<h[1-6]/) ||
-          trimmed.match(/^<ul/) ||
-          trimmed.match(/^<ol/) ||
-          trimmed.match(/^<pre/) ||
-          trimmed.match(/^<li/) ||
-          trimmed.match(/^<blockquote/) ||
-          trimmed.match(/^<hr/) ||
-          trimmed.match(/^<table/)
-        ) {
+        // Don't wrap already processed elements in paragraphs.
+        // If trailing prose got stuck to a block (missing blank line), split it off.
+        const blockStart = trimmed.match(
+          /^<(h[1-6]|ul|ol|pre|li|blockquote|hr|table|div)\b/
+        )
+        if (blockStart) {
+          const tag = blockStart[1]
+          let splitIdx = -1
+          if (tag === 'hr') {
+            const hrMatch = trimmed.match(/^<hr\b[^>]*\/?>/i)
+            if (hrMatch) splitIdx = hrMatch[0].length
+          } else {
+            const close = `</${tag}>`
+            const idx = trimmed.lastIndexOf(close)
+            if (idx !== -1) splitIdx = idx + close.length
+          }
+
+          if (splitIdx !== -1 && splitIdx < trimmed.length) {
+            const block = trimmed.slice(0, splitIdx).trim()
+            const rest = trimmed.slice(splitIdx).trim()
+            if (rest) {
+              const processed = processInlineMarkdown(rest)
+              return (
+                block +
+                `<p class="copilot-paragraph">${processed.replace(/\n/g, ' ')}</p>`
+              )
+            }
+          }
           return trimmed
         }
 
@@ -1524,14 +1855,14 @@
     }
 
     if (textEl) {
-      if (!config.websocketUrl) {
+      if (!config.sseUrl) {
         textEl.textContent = 'Not configured'
         textEl.style.color = '#ef4444'
       } else if (isConnected) {
-        textEl.textContent = 'Connected'
+        textEl.textContent = 'Ready'
         textEl.style.color = '#10b981'
       } else {
-        textEl.textContent = 'Connecting...'
+        textEl.textContent = 'Unavailable'
         textEl.style.color = '#f59e0b'
       }
     }
@@ -1576,11 +1907,11 @@
     chatWindow.className = `copilot-chat-window ${config.position}`
     chatWindow.id = 'copilot-chat-window'
 
-    const connectionStatus = isConnected
-      ? 'Connected'
-      : config.websocketUrl
-        ? 'Connecting...'
-        : 'Not configured'
+    const connectionStatus = !config.sseUrl
+      ? 'Not configured'
+      : isConnected
+        ? 'Ready'
+        : 'Unavailable'
     chatWindow.innerHTML = `
       <div class="copilot-chat-header">
         <div class="copilot-chat-header-title">
@@ -1601,9 +1932,7 @@
         </div>
       </div>
       <div class="copilot-chat-messages" id="copilot-chat-messages">
-        <div class="copilot-empty-screen">
-          <h2>How can I help you today?</h2>
-        </div>
+        ${getEmptyScreenHtml()}
       </div>
       <div class="copilot-suggested-questions" id="copilot-suggested-questions">
         <div class="copilot-suggested-questions-title">Suggested Questions</div>
@@ -1731,11 +2060,6 @@
     }
 
     if (isOpen) {
-      // Generate new UUID for chatter_id if this is the first time opening or no chatterId exists
-      if (!chatterId) {
-        chatterId = generateUUID()
-      }
-
       chatWindow.classList.add('open')
       const badge = document.getElementById('copilot-bubble-badge')
       if (badge) badge.style.display = 'none'
@@ -1777,57 +2101,50 @@
     }
   }
 
-  // Start new chat
+  // Start new chat — clear session_id so next question starts a fresh session
   function startNewChat() {
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
+
     // Stop any ongoing streaming first
     if (isStreaming) {
-      // Clear render timeout if any
       if (renderTimeout) {
         clearTimeout(renderTimeout)
         renderTimeout = null
       }
 
-      // Stop streaming state
       isStreaming = false
       animation = false
-
-      // Reset current chat ID to ignore any delayed messages from previous conversation
       currentChatId = null
     }
 
-    // Generate new UUID for this chat session
-    chatterId = generateUUID()
+    // Clear session so the next question omits session_id (backend mints a new one)
+    sessionId = null
 
     // Clear all messages and state
     chatMessages = []
     messages = []
     streamingResponse = ''
     lastBotMessageElement = null
-    currentChatId = null // Reset chat tracking
-    currentCitations = [] // Clear citations
+    currentChatId = null
+    currentCitations = []
 
-    // Clear render timeout if any (double check)
     if (renderTimeout) {
       clearTimeout(renderTimeout)
       renderTimeout = null
     }
 
-    // Re-render to show empty screen
     renderMessages()
-
-    // Update suggested questions visibility
     updateSuggestedQuestionsVisibility()
-
-    // Update new chat button state (should be enabled after reset)
     updateNewChatButtonState()
 
-    // Focus input
     const input = document.getElementById('copilot-chat-input')
     if (input) {
       input.focus()
     }
 
-    // Re-enable send button
     const sendButton = document.getElementById('copilot-chat-send')
     if (sendButton) {
       sendButton.disabled = false
@@ -1849,16 +2166,12 @@
       document.addEventListener('DOMContentLoaded', function () {
         injectStyles()
         createBubble()
-        if (config.websocketUrl) {
-          connectWebSocket()
-        }
+        updateConnectionStatus()
       })
     } else {
       injectStyles()
       createBubble()
-      if (config.websocketUrl) {
-        connectWebSocket()
-      }
+      updateConnectionStatus()
     }
   }
 
@@ -1879,8 +2192,8 @@
     isConnected: function () {
       return isConnected
     },
-    getChatterId: function () {
-      return chatterId
+    getSessionId: function () {
+      return sessionId
     },
     startNewChat: startNewChat
   }

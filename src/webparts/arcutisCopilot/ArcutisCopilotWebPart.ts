@@ -7,14 +7,16 @@ import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 
 import * as strings from 'ArcutisCopilotWebPartStrings';
 import arcutisIconUrl from './assets/arcutis-icon.png';
+import arcutisLogoUrl from './assets/Arcutis.png';
 
 export interface IArcutisCopilotWebPartProps {
   description: string;
 }
 
 interface ICopilotBubbleConfig {
-  websocketUrl: string;
+  sseUrl: string;
   botIconUrl?: string;
+  logoUrl?: string;
   position?: string;
   primaryColor?: string;
   theme?: string;
@@ -40,8 +42,9 @@ export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcuti
   protected onInit(): Promise<void> {
     if (!this._widgetInitialized && !window.CopilotBubbleLoaded) {
       window.CopilotBubbleConfig = {
-        websocketUrl: 'wss://arcnet-ai-assistant-backend-dev-hzbbejcraah9defd.centralus-01.azurewebsites.net/ws',
+        sseUrl: 'https://arcnet-ai-buddy-api.azurewebsites.net/chat',
         botIconUrl: arcutisIconUrl,
+        logoUrl: arcutisLogoUrl,
         position: 'bottom-right',
         primaryColor: '#a67c52',
         theme: 'light',
