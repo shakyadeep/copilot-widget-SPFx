@@ -35,13 +35,7 @@
       userId: bubbleConfig.userId || 'guest@example.com',
       role: bubbleConfig.role || 'user',
       botIconUrl: bubbleConfig.botIconUrl || '', // Bot avatar icon URL
-      logoUrl: bubbleConfig.logoUrl || '', // Welcome screen logo URL
-      suggestedQuestions: bubbleConfig.suggestedQuestions || [
-        'What equity-related policies and plans are available for employees?',
-        'What are all the travel policies, including domestic and international travel guidelines?',
-        'Show me all HR policies related to employee benefits and compensation.',
-        'What finance policies cover expense reimbursement and budget approval processes?'
-      ]
+      logoUrl: bubbleConfig.logoUrl || '' // Welcome screen logo URL
     },
     window.CopilotBubbleConfig || {}
   )
@@ -192,7 +186,7 @@
       }
       .copilot-chat-window {
         position: fixed;
-        width: 600px;
+        width: 680px;
         height: 100vh;
         max-width: calc(100vw - 40px);
         background: ${colors.card};
@@ -309,6 +303,63 @@
       .copilot-document-view-btn:hover {
         background: ${config.primaryColor};
         color: ${colors.primaryForeground};
+      }
+      .copilot-citations-section {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid ${colors.border};
+      }
+      .copilot-citations-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border: 1px solid ${colors.border};
+        border-radius: 6px;
+        background: ${colors.background};
+        color: ${colors.foreground};
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .copilot-citations-toggle:hover {
+        border-color: ${config.primaryColor};
+        color: ${config.primaryColor};
+      }
+      .copilot-citations-toggle-icon {
+        display: inline-flex;
+        transition: transform 0.2s;
+      }
+      .copilot-citations-toggle[aria-expanded="true"] .copilot-citations-toggle-icon {
+        transform: rotate(180deg);
+      }
+      .copilot-citations-list {
+        display: none;
+        margin-top: 8px;
+      }
+      .copilot-citations-list.open {
+        display: block;
+      }
+      .copilot-citation-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: ${colors.background};
+        border: 1px solid ${colors.border};
+        border-radius: 6px;
+        margin-bottom: 4px;
+      }
+      .copilot-citation-item:last-child {
+        margin-bottom: 0;
+      }
+      .copilot-citation-item-name {
+        flex: 1;
+        font-size: 12px;
+        color: ${colors.foreground};
+        word-break: break-all;
       }
       .copilot-tooltip {
         position: relative;
@@ -557,16 +608,16 @@
         max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
-        margin: 0.8em 0;
+        margin: 0.5em 0;
         border: 1px solid ${withOpacity(colors.border, 0.8)};
-        border-radius: 8px;
+        border-radius: 6px;
         background: ${colors.card};
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
         scrollbar-color: ${colors.border} transparent;
       }
       .copilot-table-wrapper::-webkit-scrollbar {
-        height: 6px;
+        height: 5px;
       }
       .copilot-table-wrapper::-webkit-scrollbar-track {
         background: transparent;
@@ -586,20 +637,20 @@
         width: max-content;
         min-width: 100%;
         margin: 0;
-        font-size: 12px;
-        line-height: 1.45;
+        font-size: 11px;
+        line-height: 1.3;
       }
       .copilot-table th,
       .copilot-table td {
         border: 1px solid ${withOpacity(colors.border, 0.7)};
         border-top: none;
         border-left: none;
-        padding: 8px 10px;
+        padding: 4px 6px;
         text-align: left;
         vertical-align: top;
         color: #000000;
-        min-width: 110px;
-        max-width: 220px;
+        min-width: 80px;
+        max-width: 180px;
         white-space: normal;
         word-break: break-word;
       }
@@ -614,6 +665,7 @@
         background: ${withOpacity(config.primaryColor, 0.1)};
         font-weight: 700;
         white-space: nowrap;
+        padding: 5px 6px;
       }
       .copilot-table tbody tr:nth-child(even) {
         background: ${withOpacity(config.primaryColor, 0.04)};
@@ -665,61 +717,6 @@
         font-weight: 600;
         color: ${colors.foreground};
         margin: 0;
-      }
-      .copilot-suggested-questions {
-        padding: 12px 16px;
-        background: ${colors.background};
-        border-top: 1px solid ${colors.border};
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        max-height: 200px;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: ${colors.border} transparent;
-      }
-      .copilot-suggested-questions::-webkit-scrollbar {
-        width: 4px;
-      }
-      .copilot-suggested-questions::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .copilot-suggested-questions::-webkit-scrollbar-thumb {
-        background: ${colors.border};
-        border-radius: 2px;
-      }
-      .copilot-suggested-questions.hidden {
-        display: none;
-      }
-      .copilot-suggested-questions-title {
-        font-size: 11px;
-        font-weight: 600;
-        color: ${colors.mutedForeground};
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 4px;
-      }
-      .copilot-suggested-question {
-        padding: 10px 12px;
-        background: ${colors.card};
-        border: 1px solid ${colors.border};
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 12px;
-        color: ${colors.foreground};
-        text-align: left;
-        line-height: 1.4;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      }
-      .copilot-suggested-question:hover {
-        background: ${colors.muted};
-        border-color: ${config.primaryColor};
-        transform: translateX(2px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .copilot-suggested-question:active {
-        transform: scale(0.98);
       }
       .copilot-chat-input-container {
         padding: 12px 16px;
@@ -1266,24 +1263,25 @@
     return Array.from(documentMap.values())
   }
 
-  // Format PDF files display
+  // Format PDF files display with collapsible Citations toggle
   function formatPdfFiles(pdfDocuments) {
     if (!pdfDocuments || pdfDocuments.length === 0) return ''
 
+    const count = pdfDocuments.length
     const pdfItems = pdfDocuments
       .map((doc) => {
         const path = doc.path || doc
         const documentName = doc.doc_name || 'Document'
         return `
-        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: ${colors.background}; border: 1px solid ${colors.border}; border-radius: 6px; margin-bottom: 6px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${config.primaryColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="copilot-citation-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${config.primaryColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
             <line x1="16" y1="13" x2="8" y2="13"></line>
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          <span style="flex: 1; font-size: 12px; color: ${colors.foreground}; word-break: break-all;">${escapeHtml(documentName)}</span>
+          <span class="copilot-citation-item-name">${escapeHtml(documentName)}</span>
           <button type="button" class="copilot-document-view-btn" data-document-url="${escapeHtml(path)}">
             View
           </button>
@@ -1293,11 +1291,18 @@
       .join('')
 
     return `
-      <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid ${colors.border};">
-        <div style="font-size: 11px; font-weight: 600; color: ${colors.mutedForeground}; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-          Referenced Documents (${pdfDocuments.length})
+      <div class="copilot-citations-section">
+        <button type="button" class="copilot-citations-toggle" aria-expanded="false">
+          <span>Citations (${count})</span>
+          <span class="copilot-citations-toggle-icon" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </button>
+        <div class="copilot-citations-list">
+          ${pdfItems}
         </div>
-        ${pdfItems}
       </div>
     `
   }
@@ -1338,9 +1343,6 @@
 
       // Auto-scroll to bottom
       messagesContainer.scrollTop = messagesContainer.scrollHeight
-
-      // Update suggested questions visibility
-      updateSuggestedQuestionsVisibility()
     } else {
       // Fallback to full render
       renderMessages()
@@ -1412,9 +1414,6 @@
 
     // Update new chat button visibility
     updateNewChatButtonVisibility()
-
-    // Update suggested questions visibility
-    updateSuggestedQuestionsVisibility()
   }
 
   // Update new chat button visibility based on message count
@@ -1441,19 +1440,6 @@
       } else {
         newChatBtn.style.opacity = '1'
         newChatBtn.style.cursor = 'pointer'
-      }
-    }
-  }
-
-  // Update suggested questions visibility based on message count
-  function updateSuggestedQuestionsVisibility() {
-    const suggestedQuestionsContainer = document.getElementById('copilot-suggested-questions')
-    if (suggestedQuestionsContainer) {
-      // Show suggested questions only when there are no messages
-      if (chatMessages.length === 0) {
-        suggestedQuestionsContainer.classList.remove('hidden')
-      } else {
-        suggestedQuestionsContainer.classList.add('hidden')
       }
     }
   }
@@ -1934,18 +1920,6 @@
       <div class="copilot-chat-messages" id="copilot-chat-messages">
         ${getEmptyScreenHtml()}
       </div>
-      <div class="copilot-suggested-questions" id="copilot-suggested-questions">
-        <div class="copilot-suggested-questions-title">Suggested Questions</div>
-        ${config.suggestedQuestions
-        .map(
-          (question, index) => `
-          <button class="copilot-suggested-question" data-question-index="${index}">
-            ${escapeHtml(question)}
-          </button>
-        `
-        )
-        .join('')}
-      </div>
       <div class="copilot-chat-input-container">
         <div class="copilot-chat-input-wrapper">
           <textarea 
@@ -1977,10 +1951,21 @@
       })
     }
 
-    // Delegate document "View" clicks (buttons are rendered dynamically in messages)
+    // Delegate citation toggle + document "View" clicks (rendered dynamically in messages)
     const messagesContainer = document.getElementById('copilot-chat-messages')
     if (messagesContainer) {
       messagesContainer.addEventListener('click', function (event) {
+        const toggleBtn = event.target.closest('.copilot-citations-toggle')
+        if (toggleBtn) {
+          const section = toggleBtn.closest('.copilot-citations-section')
+          const list = section && section.querySelector('.copilot-citations-list')
+          if (!list) return
+
+          const isOpen = list.classList.toggle('open')
+          toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+          return
+        }
+
         const viewBtn = event.target.closest('.copilot-document-view-btn')
         if (!viewBtn) return
 
@@ -1996,18 +1981,6 @@
 
     // Set initial button state
     updateNewChatButtonState()
-
-    // Setup suggested questions click handlers
-    const suggestedQuestionBtns = document.querySelectorAll('.copilot-suggested-question')
-    suggestedQuestionBtns.forEach(btn => {
-      btn.addEventListener('click', function () {
-        const questionIndex = this.getAttribute('data-question-index')
-        const question = config.suggestedQuestions[questionIndex]
-        if (question && !isStreaming) {
-          sendMessage(question)
-        }
-      })
-    })
 
     // Setup input handlers
     const input = document.getElementById('copilot-chat-input')
@@ -2048,7 +2021,6 @@
 
     updateConnectionStatus()
     renderMessages()
-    updateSuggestedQuestionsVisibility()
   }
 
   // Toggle chat window
@@ -2137,7 +2109,6 @@
     }
 
     renderMessages()
-    updateSuggestedQuestionsVisibility()
     updateNewChatButtonState()
 
     const input = document.getElementById('copilot-chat-input')
