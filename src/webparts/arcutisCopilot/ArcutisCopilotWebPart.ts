@@ -9,6 +9,9 @@ import * as strings from 'ArcutisCopilotWebPartStrings';
 import arcutisIconUrl from './assets/arcutis-icon.png';
 import arcutisLogoUrl from './assets/Arcutis.png';
 
+/** Entra Application ID URI for the AIVY API app registration */
+const AIVY_API_RESOURCE = 'api://36ed8c97-5488-4ab0-bc39-b8668865d250';
+
 export interface IArcutisCopilotWebPartProps {
   description: string;
 }
@@ -24,6 +27,8 @@ interface ICopilotBubbleConfig {
   displayName?: string;
   email?: string;
   loginName?: string;
+  /** Returns Entra access token for AIVY (via SharePoint AadTokenProvider) */
+  getAccessToken?: () => Promise<string>;
 }
 
 declare global {
@@ -43,29 +48,34 @@ export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcuti
   }
 
   protected onInit(): Promise<void> {
-    if (!this._widgetInitialized && !window.CopilotBubbleLoaded) {
+    return super.onInit().then(() => {
+      if (this._widgetInitialized || window.CopilotBubbleLoaded) {
+        return;
+      }
+
       const user = this.context.pageContext.user;
 
-      window.CopilotBubbleConfig = {
-        sseUrl: 'https://arcnet-ai-buddy-api.azurewebsites.net/chat',
-        botIconUrl: arcutisIconUrl,
-        logoUrl: arcutisLogoUrl,
-        position: 'bottom-right',
-        primaryColor: '#a67c52',
-        theme: 'light',
-        bubbleText: 'AI',
-        displayName: user.displayName,
-        email: user.email,
-        loginName: user.loginName,
-      };
+      return this.context.aadTokenProviderFactory.getTokenProvider().then((tokenProvider) => {
+        window.CopilotBubbleConfig = {
+          sseUrl: 'https://arcnet-ai-buddy-api.azurewebsites.net/chat',
+          botIconUrl: arcutisIconUrl,
+          logoUrl: arcutisLogoUrl,
+          position: 'bottom-right',
+          primaryColor: '#a67c52',
+          theme: 'light',
+          bubbleText: 'AI',
+          displayName: user.displayName,
+          email: user.email,
+          loginName: user.loginName,
+          getAccessToken: () => tokenProvider.getToken(AIVY_API_RESOURCE),
+        };
 
-      // Bundled with the web part so SharePoint CSP allows execution (no inline/external script tags).
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require('./scripts/copilot-widget.js');
-      this._widgetInitialized = true;
-    }
-
-    return super.onInit();
+        // Bundled with the web part so SharePoint CSP allows execution (no inline/external script tags).
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        require('./scripts/copilot-widget.js');
+        this._widgetInitialized = true;
+      });
+    });
   }
 
   protected get dataVersion(): Version {

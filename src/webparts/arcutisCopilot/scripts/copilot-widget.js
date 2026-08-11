@@ -1105,12 +1105,35 @@
     abortController = new AbortController()
 
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream'
+      }
+
+      // Entra access token from SharePoint SSO (AadTokenProvider) → Bearer on /chat
+      if (typeof config.getAccessToken === 'function') {
+        try {
+          const accessToken = await config.getAccessToken()
+          if (accessToken) {
+            headers.Authorization = 'Bearer ' + accessToken
+          }
+        } catch (tokenError) {
+          console.error('Failed to acquire Entra access token', tokenError)
+          isStreaming = false
+          animation = false
+          updateNewChatButtonState()
+          updateLastBotMessage(
+            'Unable to sign in to the Copilot service. Please refresh and try again.',
+            true
+          )
+          currentChatId = null
+          return
+        }
+      }
+
       const res = await fetch(config.sseUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream'
-        },
+        headers: headers,
         body: JSON.stringify(payload),
         signal: abortController.signal
       })
@@ -1371,11 +1394,11 @@
     messagesContainer.innerHTML = chatMessages
       .map((msg, index) => {
         if (msg.sender === 'user') {
-          const userInitial = (config.displayName || '').trim().charAt(0).toUpperCase() || 'U'
+          const userInitials = getUserInitials(config.displayName)
           return `
           <div class="copilot-message copilot-message-user">
             <div class="copilot-message-content">${escapeHtml(msg.content)}</div>
-            <div class="copilot-message-avatar">${escapeHtml(userInitial)}</div>
+            <div class="copilot-message-avatar">${escapeHtml(userInitials)}</div>
           </div>
         `
         } else {
@@ -1829,6 +1852,20 @@
     const div = document.createElement('div')
     div.textContent = text
     return div.innerHTML
+  }
+
+  function getUserInitials(displayName) {
+    const parts = (displayName || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+
+    if (parts.length === 0) return 'U'
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+
+    const first = parts[0].charAt(0)
+    const last = parts[parts.length - 1].charAt(0)
+    return (first + last).toUpperCase()
   }
 
   // Create bubble button

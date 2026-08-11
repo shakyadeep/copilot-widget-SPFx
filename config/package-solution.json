@@ -3,10 +3,16 @@
   "solution": {
     "name": "arcutis-co-client-side-solution",
     "id": "b636f68f-a8d3-4bf4-a0e5-21e03becc962",
-    "version": "1.0.0.0",
+    "version": "1.0.1.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
+    "webApiPermissionRequests": [
+      {
+        "resource": "AIVY",
+        "scope": "access_as_user"
+      }
+    ],
     "developer": {
       "name": "",
       "websiteUrl": "",
