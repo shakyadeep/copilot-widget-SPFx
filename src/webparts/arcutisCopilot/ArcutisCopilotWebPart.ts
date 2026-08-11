@@ -21,6 +21,9 @@ interface ICopilotBubbleConfig {
   primaryColor?: string;
   theme?: string;
   bubbleText?: string;
+  displayName?: string;
+  email?: string;
+  loginName?: string;
 }
 
 declare global {
@@ -41,6 +44,8 @@ export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcuti
 
   protected onInit(): Promise<void> {
     if (!this._widgetInitialized && !window.CopilotBubbleLoaded) {
+      const user = this.context.pageContext.user;
+
       window.CopilotBubbleConfig = {
         sseUrl: 'https://arcnet-ai-buddy-api.azurewebsites.net/chat',
         botIconUrl: arcutisIconUrl,
@@ -49,6 +54,9 @@ export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcuti
         primaryColor: '#a67c52',
         theme: 'light',
         bubbleText: 'AI',
+        displayName: user.displayName,
+        email: user.email,
+        loginName: user.loginName,
       };
 
       // Bundled with the web part so SharePoint CSP allows execution (no inline/external script tags).

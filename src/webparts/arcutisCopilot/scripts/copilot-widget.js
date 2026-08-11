@@ -34,6 +34,9 @@
       theme: bubbleConfig.theme || 'light',
       userId: bubbleConfig.userId || 'guest@example.com',
       role: bubbleConfig.role || 'user',
+      displayName: bubbleConfig.displayName || '',
+      email: bubbleConfig.email || '',
+      loginName: bubbleConfig.loginName || '',
       botIconUrl: bubbleConfig.botIconUrl || '', // Bot avatar icon URL
       logoUrl: bubbleConfig.logoUrl || '' // Welcome screen logo URL
     },
@@ -186,7 +189,7 @@
       }
       .copilot-chat-window {
         position: fixed;
-        width: 680px;
+        width: 630px;
         height: 100vh;
         max-width: calc(100vw - 40px);
         background: ${colors.card};
@@ -781,14 +784,6 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
-      .copilot-status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 8px;
-        background: ${isConnected ? '#10b981' : '#ef4444'};
-      }
       .copilot-spinner {
         display: inline-block;
         width: 16px;
@@ -1091,7 +1086,10 @@
       session_id: sessionId || null,
       message: messageText,
       retrieval_mode: 'style2',
-      inline_citations: false
+      inline_citations: false,
+      display_name: config.displayName || '',
+      email: config.email || '',
+      login_name: config.loginName || ''
     }
 
     currentChatId = Date.now().toString()
@@ -1373,10 +1371,11 @@
     messagesContainer.innerHTML = chatMessages
       .map((msg, index) => {
         if (msg.sender === 'user') {
+          const userInitial = (config.displayName || '').trim().charAt(0).toUpperCase() || 'U'
           return `
           <div class="copilot-message copilot-message-user">
             <div class="copilot-message-content">${escapeHtml(msg.content)}</div>
-            <div class="copilot-message-avatar">U</div>
+            <div class="copilot-message-avatar">${escapeHtml(userInitial)}</div>
           </div>
         `
         } else {
@@ -1832,28 +1831,6 @@
     return div.innerHTML
   }
 
-  function updateConnectionStatus() {
-    const statusEl = document.getElementById('copilot-status-indicator')
-    const textEl = document.getElementById('copilot-connection-text')
-
-    if (statusEl) {
-      statusEl.style.background = isConnected ? '#10b981' : '#ef4444'
-    }
-
-    if (textEl) {
-      if (!config.sseUrl) {
-        textEl.textContent = 'Not configured'
-        textEl.style.color = '#ef4444'
-      } else if (isConnected) {
-        textEl.textContent = 'Ready'
-        textEl.style.color = '#10b981'
-      } else {
-        textEl.textContent = 'Unavailable'
-        textEl.style.color = '#f59e0b'
-      }
-    }
-  }
-
   // Create bubble button
   function createBubble() {
     bubbleContainer = document.createElement('div')
@@ -1893,17 +1870,10 @@
     chatWindow.className = `copilot-chat-window ${config.position}`
     chatWindow.id = 'copilot-chat-window'
 
-    const connectionStatus = !config.sseUrl
-      ? 'Not configured'
-      : isConnected
-        ? 'Ready'
-        : 'Unavailable'
     chatWindow.innerHTML = `
       <div class="copilot-chat-header">
         <div class="copilot-chat-header-title">
-          <span class="copilot-status-indicator" id="copilot-status-indicator"></span>
           <span>ArcNet AI</span>
-          <span style="font-size: 10px; font-weight: normal; margin-left: 8px; opacity: 0.7;" id="copilot-connection-text">${connectionStatus}</span>
         </div>
         <div class="copilot-chat-header-actions">
           <div class="copilot-tooltip hidden" id="copilot-new-chat-container">
@@ -2019,7 +1989,6 @@
       }
     }
 
-    updateConnectionStatus()
     renderMessages()
   }
 
@@ -2137,12 +2106,10 @@
       document.addEventListener('DOMContentLoaded', function () {
         injectStyles()
         createBubble()
-        updateConnectionStatus()
       })
     } else {
       injectStyles()
       createBubble()
-      updateConnectionStatus()
     }
   }
 
