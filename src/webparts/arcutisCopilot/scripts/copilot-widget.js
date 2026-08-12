@@ -1110,15 +1110,13 @@
         Accept: 'text/event-stream'
       }
 
-      // Entra access token from SharePoint SSO (AadTokenProvider) → Bearer on /chat
       if (typeof config.getAccessToken === 'function') {
         try {
           const accessToken = await config.getAccessToken()
           if (accessToken) {
             headers.Authorization = 'Bearer ' + accessToken
           }
-        } catch (tokenError) {
-          console.error('Failed to acquire Entra access token', tokenError)
+        } catch (e) {
           isStreaming = false
           animation = false
           updateNewChatButtonState()

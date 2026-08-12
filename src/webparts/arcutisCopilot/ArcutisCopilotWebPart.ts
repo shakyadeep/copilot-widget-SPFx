@@ -9,7 +9,6 @@ import * as strings from 'ArcutisCopilotWebPartStrings';
 import arcutisIconUrl from './assets/arcutis-icon.png';
 import arcutisLogoUrl from './assets/Arcutis.png';
 
-/** Entra Application ID URI for the AIVY API app registration */
 const AIVY_API_RESOURCE = 'api://36ed8c97-5488-4ab0-bc39-b8668865d250';
 
 export interface IArcutisCopilotWebPartProps {
@@ -27,7 +26,6 @@ interface ICopilotBubbleConfig {
   displayName?: string;
   email?: string;
   loginName?: string;
-  /** Returns Entra access token for AIVY (via SharePoint AadTokenProvider) */
   getAccessToken?: () => Promise<string>;
 }
 
