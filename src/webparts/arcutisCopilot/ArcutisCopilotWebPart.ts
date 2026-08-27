@@ -9,7 +9,7 @@ import * as strings from 'ArcutisCopilotWebPartStrings';
 import arcutisIconUrl from './assets/arcutis-icon.png';
 import arcutisLogoUrl from './assets/Arcutis.png';
 
-const AIVY_API_RESOURCE = 'api://36ed8c97-5488-4ab0-bc39-b8668865d250';
+const AIVY_API_RESOURCE = 'api://ba03189b-5be5-4ea4-ac3b-e4b76d89c9c7';
 
 export interface IArcutisCopilotWebPartProps {
   description: string;

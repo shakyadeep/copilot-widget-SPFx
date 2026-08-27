@@ -9,7 +9,7 @@
     "isDomainIsolated": false,
     "webApiPermissionRequests": [
       {
-        "resource": "AIVY",
+        "resource": "arqt-enterprise-ai-sharepoint-integration",
         "scope": "access_as_user"
       }
     ],
