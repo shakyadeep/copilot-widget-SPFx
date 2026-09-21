@@ -8,7 +8,7 @@
  *   window.CopilotBubbleConfig = {
  *     sseUrl: 'https://your-api/chat',
  *     position: 'bottom-right',
- *     primaryColor: '#a67c52'
+ *     primaryColor: '#FFE43A'
  *   };
  * </script>
  */
@@ -29,8 +29,8 @@
       sseUrl: bubbleConfig.sseUrl || '',
       position: bubbleConfig.position || 'bottom-right',
       zIndex: bubbleConfig.zIndex || 999999,
-      primaryColor: bubbleConfig.primaryColor || '#fef7ef', // Vintage paper primary
-      bubbleText: bubbleConfig.bubbleText || 'AI',
+      primaryColor: bubbleConfig.primaryColor || '#FFE43A',
+      bubbleText: bubbleConfig.bubbleText || 'Ask ArcNet',
       theme: bubbleConfig.theme || 'light',
       userId: bubbleConfig.userId || 'guest@example.com',
       role: bubbleConfig.role || 'user',
@@ -62,17 +62,21 @@
 
   // Custom markdown parser - handles all markdown features without external dependencies
 
-  // Vintage Paper Theme Colors
+  // ArcNet brand theme (matches Ask ArcNet UI)
+  const brandYellow = '#FFE43A'
+  const brandBlack = '#1A1A1A'
+  const brandCream = '#F8F4EB'
+
   const themeColors = {
     light: {
-      background: '#fef7ef', // Updated background color
-      foreground: '#4a3d2f', // hsl(30, 15%, 25%)
-      card: 'white', // hsl(42, 4%, 98%)
-      primary: '#fef7ef', // Updated primary color
-      primaryForeground: '#4a3d2f', // Dark text for contrast
-      border: '#d4c4a8', // hsl(35, 20%, 80%)
-      muted: '#c4b5a0', // hsl(42, 15%, 75%)
-      mutedForeground: '#6b5d4f' // hsl(30, 10%, 45%)
+      background: brandCream,
+      foreground: brandBlack,
+      card: '#ffffff',
+      primary: brandYellow,
+      primaryForeground: brandBlack,
+      border: '#E6E1D6',
+      muted: '#EEE9DC',
+      mutedForeground: '#6F6F6F'
     },
     dark: {
       background: '#1f1812', // hsl(30, 15%, 12%)
@@ -141,35 +145,48 @@
         left: 20px;
       }
       .copilot-bubble-button {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: ${colors.card};
-        border: 2px solid ${colors.border};
+        height: 58px;
+        min-width: 196px;
+        border-radius: 999px;
+        background: ${brandYellow};
+        border: 3px solid ${brandBlack};
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: ${colors.foreground};
-        font-weight: bold;
+        gap: 12px;
+        color: ${brandBlack};
+        font-weight: 800;
         font-size: 18px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: -0.02em;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, opacity 0.2s ease;
         position: relative;
-        overflow: hidden;
-        padding: 0px;
+        overflow: visible;
+        padding: 10px 26px 10px 20px;
+      }
+      .copilot-bubble-container.chat-open .copilot-bubble-button {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.96);
       }
       .copilot-bubble-button img {
-        width: 70%;
-        height: 70%;
+        width: 40px;
+        height: 30px;
         object-fit: contain;
+        flex-shrink: 0;
+      }
+      .copilot-bubble-label {
+        line-height: 1;
+        white-space: nowrap;
+        font-weight: 800;
       }
       .copilot-bubble-button:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16), 0 3px 8px rgba(0, 0, 0, 0.1);
       }
       .copilot-bubble-button:active {
-        transform: scale(0.95);
+        transform: scale(0.98);
       }
       .copilot-bubble-badge {
         position: absolute;
@@ -192,9 +209,9 @@
         width: 630px;
         height: 100vh;
         max-width: calc(100vw - 40px);
-        background: ${colors.card};
+        background: ${brandCream};
         border-radius: 0;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -202,7 +219,7 @@
         opacity: 0;
         transform: scale(0.9) translateY(10px);
         pointer-events: none;
-        border: 1px solid ${colors.border};
+        border: none;
         top: 0;
         bottom: 0;
       }
@@ -224,33 +241,99 @@
         left: 0;
       }
       .copilot-chat-header {
-        padding: 16px 20px;
-        background: ${colors.card};
-        border-bottom: 1px solid ${colors.border};
+        box-sizing: border-box;
+        padding: 0 16px 0 20px;
+        height: 58px;
+        min-height: 58px;
+        background: ${brandYellow};
+        border-bottom: none;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-shrink: 0;
+        -webkit-font-smoothing: antialiased;
       }
       .copilot-chat-header-title {
         font-size: 15px;
         font-weight: 600;
-        color: ${colors.foreground};
+        color: ${brandBlack};
         display: flex;
         align-items: center;
+        min-width: 0;
+        flex: 1;
+      }
+      .copilot-chat-header-brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .copilot-chat-header-mark {
+        height: 34px;
+        width: auto;
+        display: block;
+        object-fit: contain;
+      }
+      .copilot-chat-header-wordmark {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        line-height: 1;
+      }
+      .copilot-chat-header-wordmark-name {
+        font-family: 'Avenir Next', Avenir, 'Segoe UI', Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        color: ${brandBlack};
+        line-height: 1;
+      }
+      .copilot-chat-header-wordmark-sub {
+        font-family: 'Avenir Next', Avenir, 'Segoe UI', Arial, Helvetica, sans-serif;
+        font-size: 5.6px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        color: ${brandBlack};
+        line-height: 1;
+        white-space: nowrap;
+      }
+      .copilot-chat-header-logo {
+        height: 36px;
+        width: auto;
+        max-width: 210px;
+        object-fit: contain;
+        display: block;
+        flex-shrink: 0;
+      }
+      .copilot-chat-header-divider {
+        width: 1px;
+        height: 24px;
+        background: ${brandBlack};
+        opacity: 0.32;
+        margin: 0 16px;
+        flex-shrink: 0;
+      }
+      .copilot-chat-header-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: ${brandBlack};
+        white-space: nowrap;
+        letter-spacing: -0.01em;
       }
       .copilot-chat-header-actions {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        flex-shrink: 0;
       }
       .copilot-chat-header-button {
         width: 32px;
         height: 32px;
         border-radius: 8px;
-        border: 1px solid ${colors.border};
-        background: ${colors.card};
-        color: ${colors.foreground};
+        border: 1.5px solid ${brandBlack};
+        background: transparent;
+        color: ${brandBlack};
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -258,16 +341,17 @@
         transition: all 0.2s;
         font-size: 18px;
         position: relative;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        box-shadow: none;
+        padding: 0;
       }
       .copilot-chat-header-button:hover {
-        background: ${colors.muted};
-        border-color: ${config.primaryColor}40;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0.06);
+        border-color: ${brandBlack};
+        box-shadow: none;
       }
       .copilot-chat-header-button:active {
         transform: scale(0.95);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        box-shadow: none;
       }
       .copilot-chat-header-button:disabled {
         opacity: 0.5;
@@ -280,16 +364,17 @@
         border-radius: 8px;
         border: none;
         background: transparent;
-        color: ${colors.foreground};
+        color: ${brandBlack};
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.2s;
         font-size: 20px;
+        padding: 0;
       }
       .copilot-chat-header-close:hover {
-        background: ${colors.muted};
+        background: rgba(0, 0, 0, 0.06);
       }
       .copilot-document-view-btn {
         color: ${config.primaryColor};
@@ -451,10 +536,10 @@
       }
       .copilot-message-user .copilot-message-content {
         background: #ffffff;
-        color: #4a3d2f;
+        color: ${brandBlack};
         border: 1px solid ${colors.border};
         border-bottom-right-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       }
       .copilot-message-bot .copilot-message-content {
         max-width: 90%;
@@ -580,15 +665,15 @@
         font-weight: 600;
       }
       .copilot-link {
-        color: ${config.primaryColor};
+        color: ${brandBlack};
         text-decoration: underline;
-        text-decoration-color: ${withOpacity(config.primaryColor, 0.6)};
+        text-decoration-color: ${withOpacity(brandBlack, 0.4)};
         text-underline-offset: 3px;
         font-weight: 500;
         transition: all 0.2s;
       }
       .copilot-link:hover {
-        text-decoration-color: ${config.primaryColor};
+        text-decoration-color: ${brandBlack};
         text-underline-offset: 4px;
       }
       .copilot-blockquote {
@@ -706,65 +791,92 @@
         justify-content: center;
         padding: 40px 20px;
         text-align: center;
-        gap: 16px;
+        gap: 10px;
       }
       .copilot-empty-logo {
-        width: 120px;
+        width: 168px;
         height: auto;
-        max-width: 60%;
+        max-width: 70%;
         object-fit: contain;
         display: block;
+        margin-bottom: 6px;
+      }
+      .copilot-empty-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: ${brandBlack};
+        margin: 0;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+      .copilot-empty-highlight {
+        background: ${brandYellow};
+        padding: 1px 6px 2px;
+        display: inline-block;
+      }
+      .copilot-empty-subtitle {
+        font-size: 14px;
+        font-weight: 400;
+        color: ${colors.mutedForeground};
+        margin: 4px 0 0;
       }
       .copilot-empty-screen h2 {
-        font-size: 16px;
-        font-weight: 600;
-        color: ${colors.foreground};
+        font-size: 28px;
+        font-weight: 700;
+        color: ${brandBlack};
         margin: 0;
       }
       .copilot-chat-input-container {
-        padding: 12px 16px;
-        background: ${colors.card};
-        border-top: 1px solid ${colors.border};
+        padding: 8px 16px 12px;
+        background: ${brandCream};
+        border-top: none;
         flex-shrink: 0;
       }
       .copilot-chat-input-wrapper {
         display: flex;
-        gap: 6px;
+        gap: 8px;
         align-items: center;
-        background: ${colors.card};
-        border: 1px solid ${colors.border};
-        border-radius: 10px;
-        padding: 6px;
-        transition: all 0.2s;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        transition: none;
       }
       .copilot-chat-input-wrapper:focus-within {
-        border-color: ${config.primaryColor};
-        box-shadow: 0 0 0 3px ${config.primaryColor}20;
+        border-color: transparent;
+        box-shadow: none;
       }
       .copilot-chat-input {
+        box-sizing: border-box;
         flex: 1;
-        border: none;
+        min-width: 0;
+        border: 1px solid #E4E4E4;
         background: #ffffff;
-        color: ${colors.foreground};
-        font-size: 13px;
-        padding: 6px 10px;
+        color: ${brandBlack};
+        font-size: 14px;
+        padding: 10px 18px;
         resize: none;
         outline: none;
+        height: 44px;
+        min-height: 44px;
         max-height: 100px;
-        min-height: 32px;
         font-family: inherit;
         line-height: 1.4;
+        border-radius: 22px;
+        box-shadow: none;
+        overflow-y: auto;
       }
       .copilot-chat-input::placeholder {
-        color: ${colors.mutedForeground};
+        color: #A3A3A3;
       }
       .copilot-chat-send {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
+        box-sizing: border-box;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
         border: none;
-        background: ${config.primaryColor};
-        color: ${colors.primaryForeground};
+        background: ${brandYellow};
+        color: ${brandBlack};
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -772,17 +884,25 @@
         transition: all 0.2s;
         flex-shrink: 0;
         font-size: 14px;
+        padding: 0;
       }
       .copilot-chat-send:hover:not(:disabled) {
-        background: ${config.primaryColor}dd;
-        transform: scale(1.05);
+        background: #f5d830;
+        transform: none;
       }
       .copilot-chat-send:active:not(:disabled) {
-        transform: scale(0.95);
+        transform: scale(0.96);
       }
       .copilot-chat-send:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+      .copilot-chat-disclaimer {
+        margin: 8px 0 0;
+        text-align: center;
+        font-size: 11px;
+        line-height: 1.3;
+        color: #9A9A9A;
       }
       .copilot-spinner {
         display: inline-block;
@@ -1375,7 +1495,8 @@
     return `
       <div class="copilot-empty-screen">
         ${logo}
-        <h2>How can I help you today?</h2>
+        <h2 class="copilot-empty-title">Ask <span class="copilot-empty-highlight">ArcNet</span></h2>
+        <p class="copilot-empty-subtitle">How can I help you today?</p>
       </div>
     `
   }
@@ -1440,12 +1561,7 @@
   function updateNewChatButtonVisibility() {
     const newChatBtnContainer = document.querySelector('.copilot-tooltip')
     if (newChatBtnContainer) {
-      // Show button only if there are messages (more than 0)
-      if (chatMessages.length > 0) {
-        newChatBtnContainer.classList.remove('hidden')
-      } else {
-        newChatBtnContainer.classList.add('hidden')
-      }
+      newChatBtnContainer.classList.remove('hidden')
     }
   }
 
@@ -1867,6 +1983,27 @@
   }
 
   // Create bubble button
+  function fillBubbleButton(button) {
+    if (!button) return
+    const badge =
+      button.querySelector('.copilot-bubble-badge') ||
+      document.getElementById('copilot-bubble-badge')
+    button.innerHTML = ''
+    if (config.botIconUrl) {
+      const img = document.createElement('img')
+      img.src = config.botIconUrl
+      img.alt = ''
+      button.appendChild(img)
+    }
+    const label = document.createElement('span')
+    label.className = 'copilot-bubble-label'
+    label.textContent = 'Ask ArcNet'
+    button.appendChild(label)
+    if (badge) {
+      button.appendChild(badge)
+    }
+  }
+
   function createBubble() {
     bubbleContainer = document.createElement('div')
     bubbleContainer.className = `copilot-bubble-container ${config.position}`
@@ -1874,19 +2011,8 @@
 
     const button = document.createElement('button')
     button.className = 'copilot-bubble-button'
-    button.setAttribute('aria-label', 'Open AI Copilot')
-
-    // Use icon if available, otherwise use bubbleText
-    if (config.botIconUrl) {
-      const img = document.createElement('img')
-      img.src = config.botIconUrl
-      img.alt = 'AI Copilot'
-      button.appendChild(img)
-    } else {
-      button.innerHTML = config.bubbleText
-    }
-
-    button.onclick = toggleChat
+    button.setAttribute('aria-label', 'Open Ask ArcNet')
+    button.type = 'button'
 
     const badge = document.createElement('div')
     badge.className = 'copilot-bubble-badge'
@@ -1894,6 +2020,9 @@
     badge.style.display = 'none'
     badge.textContent = '1'
     button.appendChild(badge)
+
+    fillBubbleButton(button)
+    button.onclick = toggleChat
 
     bubbleContainer.appendChild(button)
     document.body.appendChild(bubbleContainer)
@@ -1905,21 +2034,31 @@
     chatWindow.className = `copilot-chat-window ${config.position}`
     chatWindow.id = 'copilot-chat-window'
 
+    const headerBrand = config.logoUrl
+      ? `<img class="copilot-chat-header-logo" src="${escapeHtml(config.logoUrl)}" alt="Arcutis" />
+          <span class="copilot-chat-header-divider" aria-hidden="true"></span>`
+      : ''
+
     chatWindow.innerHTML = `
       <div class="copilot-chat-header">
         <div class="copilot-chat-header-title">
-          <span>ArcNet AI</span>
+          ${headerBrand}
+          <span class="copilot-chat-header-name">Ask ArcNet</span>
         </div>
         <div class="copilot-chat-header-actions">
-          <div class="copilot-tooltip hidden" id="copilot-new-chat-container">
+          <div class="copilot-tooltip" id="copilot-new-chat-container">
             <button class="copilot-chat-header-button" id="copilot-new-chat-btn" aria-label="Start new chat" title="Start new chat">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 5v14M5 12h14"></path>
               </svg>
             </button>
             <span class="copilot-tooltip-text">Start new chat</span>
           </div>
-          <button class="copilot-chat-header-close" id="copilot-chat-close-btn" type="button" aria-label="Close chat">✕</button>
+          <button class="copilot-chat-header-close" id="copilot-chat-close-btn" type="button" aria-label="Close chat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18M6 6l12 12"></path>
+            </svg>
+          </button>
         </div>
       </div>
       <div class="copilot-chat-messages" id="copilot-chat-messages">
@@ -1934,9 +2073,12 @@
             rows="1"
           ></textarea>
           <button class="copilot-chat-send" id="copilot-chat-send" aria-label="Send message">
-            ➤
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5.14v13.72L19.5 12 8 5.14z"></path>
+            </svg>
           </button>
         </div>
+        <p class="copilot-chat-disclaimer">AI-generated content may be incorrect.</p>
       </div>
     `
 
@@ -2037,6 +2179,7 @@
 
     if (isOpen) {
       chatWindow.classList.add('open')
+      if (bubbleContainer) bubbleContainer.classList.add('chat-open')
       const badge = document.getElementById('copilot-bubble-badge')
       if (badge) badge.style.display = 'none'
 
@@ -2047,26 +2190,7 @@
       }, 100)
     } else {
       chatWindow.classList.remove('open')
-    }
-
-    // Update button
-    const button = bubbleContainer.querySelector('.copilot-bubble-button')
-    if (button) {
-      if (isOpen) {
-        // Show close icon
-        button.innerHTML = '✕'
-      } else {
-        // Show icon or text
-        if (config.botIconUrl) {
-          button.innerHTML = ''
-          const img = document.createElement('img')
-          img.src = config.botIconUrl
-          img.alt = 'AI Copilot'
-          button.appendChild(img)
-        } else {
-          button.innerHTML = config.bubbleText
-        }
-      }
+      if (bubbleContainer) bubbleContainer.classList.remove('chat-open')
     }
   }
 
