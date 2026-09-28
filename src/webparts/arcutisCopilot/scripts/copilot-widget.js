@@ -145,25 +145,25 @@
         left: 20px;
       }
       .copilot-bubble-button {
-        height: 58px;
-        min-width: 196px;
+        height: 44px;
+        min-width: 147px;
         border-radius: 999px;
         background: ${brandYellow};
-        border: 3px solid ${brandBlack};
+        border: 2px solid ${brandBlack};
         cursor: pointer;
-        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.08);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
+        gap: 9px;
         color: ${brandBlack};
         font-weight: 800;
-        font-size: 18px;
+        font-size: 14px;
         letter-spacing: -0.02em;
         transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, opacity 0.2s ease;
         position: relative;
         overflow: visible;
-        padding: 10px 26px 10px 20px;
+        padding: 8px 20px 8px 15px;
       }
       .copilot-bubble-container.chat-open .copilot-bubble-button {
         opacity: 0;
@@ -171,8 +171,8 @@
         transform: scale(0.96);
       }
       .copilot-bubble-button img {
-        width: 40px;
-        height: 30px;
+        width: 30px;
+        height: 22px;
         object-fit: contain;
         flex-shrink: 0;
       }
@@ -377,20 +377,20 @@
         background: rgba(0, 0, 0, 0.06);
       }
       .copilot-document-view-btn {
-        color: ${config.primaryColor};
+        color: ${brandBlack};
         font-size: 11px;
         white-space: nowrap;
         padding: 4px 8px;
-        border: 1px solid ${config.primaryColor};
+        border: 1px solid ${brandBlack};
         border-radius: 4px;
         transition: all 0.2s;
         cursor: pointer;
-        background: transparent;
+        background: ${brandYellow};
         font-family: inherit;
       }
       .copilot-document-view-btn:hover {
-        background: ${config.primaryColor};
-        color: ${colors.primaryForeground};
+        background: ${brandBlack};
+        color: ${brandYellow};
       }
       .copilot-citations-section {
         margin-top: 12px;
@@ -661,7 +661,7 @@
       }
       .copilot-list::marker,
       .copilot-list-item::marker {
-        color: ${withOpacity(config.primaryColor, 0.9)};
+        color: ${brandBlack};
         font-weight: 600;
       }
       .copilot-link {
@@ -752,7 +752,9 @@
       .copilot-table th {
         background: ${withOpacity(config.primaryColor, 0.1)};
         font-weight: 700;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: break-word;
         padding: 5px 6px;
       }
       .copilot-table tbody tr:nth-child(even) {
@@ -1413,7 +1415,7 @@
         const documentName = doc.doc_name || 'Document'
         return `
         <div class="copilot-citation-item">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${config.primaryColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${brandBlack}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
             <line x1="16" y1="13" x2="8" y2="13"></line>
