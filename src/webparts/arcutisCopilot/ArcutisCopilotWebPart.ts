@@ -55,7 +55,7 @@ export default class ArcutisCopilotWebPart extends BaseClientSideWebPart<IArcuti
 
       return this.context.aadTokenProviderFactory.getTokenProvider().then((tokenProvider) => {
         window.CopilotBubbleConfig = {
-          sseUrl: 'https://arcnet-ai-buddy-api.azurewebsites.net/chat',
+          sseUrl: 'https://arcnet-ai-assistant-backend-f0f3cfhnavckc3h3.centralus-01.azurewebsites.net/chat',
           botIconUrl: arcutisIconUrl,
           logoUrl: arcutisLogoUrl,
           position: 'bottom-right',
